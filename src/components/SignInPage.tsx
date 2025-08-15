@@ -46,7 +46,7 @@ export default function SignInPage() {
                     footerActionLink: "text-purple-400 hover:text-purple-300 font-mono"
                   }
                 }}
-                redirectUrl="/dashboard"
+                redirectUrl="/" 
               />
             </div>
 
