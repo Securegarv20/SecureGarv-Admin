@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, Eye, ArrowRight, X, Link, Download } from 'lucide-react';
+import { Save, Eye, ArrowRight, X, Link } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
 interface HeroContent {
@@ -12,6 +12,7 @@ interface HeroContent {
 }
 
 const API_URL = import.meta.env.VITE_API_URL;
+const API_KEY = import.meta.env.VITE_ADMIN_API_KEY;
 
 export default function HeroEditor() {
   const [content, setContent] = useState<HeroContent>({
@@ -28,20 +29,37 @@ export default function HeroEditor() {
   const [resumeLink, setResumeLink] = useState('');
   const [showResumeModal, setShowResumeModal] = useState(false);
 
+  // Enhanced fetch with API key
+  const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
+    const headers = {
+      'Content-Type': 'application/json',
+      'x-api-key': API_KEY,
+      ...options.headers
+    };
+    
+    const response = await fetch(`${API_URL}${url}`, { ...options, headers });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+    
+    return response.json();
+  };
+
   // Fetch content from API
   useEffect(() => {
     const fetchContent = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/content`);
-        if (!response.ok) throw new Error('Failed to fetch content');
+        setIsLoading(true);
+        const data = await fetchWithAuth('/api/content');
         
-        const data = await response.json();
         setContent(data);
         setResumeLink(data.resume?.url || '');
         toast.success('Content loaded successfully!');
-      } catch (error: unknown) {
+      } catch (error) {
         console.error('Error fetching content:', error);
-        toast.error('Failed to load content');
+        toast.error(error instanceof Error ? error.message : 'Failed to load content');
       } finally {
         setIsLoading(false);
       }
@@ -80,30 +98,22 @@ export default function HeroEditor() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // Update typewriter texts
-      const textsResponse = await fetch(`${API_URL}/api/content/typewriter-texts`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ typewriterTexts: content.typewriterTexts })
-      });
-
-      // Update hero content
-      const contentResponse = await fetch(`${API_URL}/api/content/hero-content`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          heroParagraph: content.heroParagraph
+      // Save all content in parallel
+      await Promise.all([
+        fetchWithAuth('/api/content/typewriter-texts', {
+          method: 'PUT',
+          body: JSON.stringify({ typewriterTexts: content.typewriterTexts })
+        }),
+        fetchWithAuth('/api/content/hero-content', {
+          method: 'PUT',
+          body: JSON.stringify({ heroParagraph: content.heroParagraph })
         })
-      });
-
-      if (!textsResponse.ok || !contentResponse.ok) {
-        throw new Error('Failed to save some content');
-      }
-
-      toast.success('Content saved successfully!');
-    } catch (error: unknown) {
+      ]);
+      
+      toast.success('All content saved successfully!');
+    } catch (error) {
       console.error('Error saving content:', error);
-      toast.error('Failed to save content');
+      toast.error(error instanceof Error ? error.message : 'Failed to save content');
     } finally {
       setIsSaving(false);
     }
@@ -116,8 +126,7 @@ export default function HeroEditor() {
     }
 
     try {
-      // Validate URL
-      new URL(resumeLink);
+      new URL(resumeLink); // Validate URL
     } catch {
       toast.error('Please enter a valid URL');
       return;
@@ -125,25 +134,18 @@ export default function HeroEditor() {
 
     setIsSaving(true);
     try {
-      const response = await fetch(`${API_URL}/api/content/resume`, {
+      const data = await fetchWithAuth('/api/content/resume', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: resumeLink })
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update resume link');
-      }
-
-      const data = await response.json();
       setContent(prev => ({
         ...prev,
-        resume: data.data
+        resume: data.resume || { url: resumeLink, fileName: 'Resume' }
       }));
       toast.success('Resume link updated successfully!');
       setShowResumeModal(false);
-    } catch (error: unknown) {
+    } catch (error) {
       console.error('Error updating resume:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to update resume');
     } finally {
@@ -153,22 +155,19 @@ export default function HeroEditor() {
 
   const removeResume = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/content/resume`, {
+      await fetchWithAuth('/api/content/resume', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: '', fileName: '' })
       });
-
-      if (!response.ok) throw new Error('Failed to remove resume');
 
       setContent(prev => ({
         ...prev,
         resume: { url: '', fileName: '' }
       }));
       toast.success('Resume removed successfully!');
-    } catch (error: unknown) {
+    } catch (error) {
       console.error('Error removing resume:', error);
-      toast.error('Failed to remove resume');
+      toast.error(error instanceof Error ? error.message : 'Failed to remove resume');
     }
   };
 
@@ -176,23 +175,19 @@ export default function HeroEditor() {
     return (
       <div className="flex justify-center items-center h-screen bg-gray-900">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-        <span className="sr-only">Loading...</span>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 p-4">
-      <Toaster 
-        position="top-right"
-        toastOptions={{
-          style: {
-            background: '#1F2937',
-            color: '#F3F4F6',
-            border: '1px solid #374151'
-          }
-        }}
-      />
+      <Toaster position="top-right" toastOptions={{
+        style: {
+          background: '#1F2937',
+          color: '#F3F4F6',
+          border: '1px solid #374151'
+        }
+      }}/>
       
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-8">
@@ -205,9 +200,10 @@ export default function HeroEditor() {
           {/* Editor Panel */}
           <div className="bg-gray-800 rounded-xl shadow-xl p-6 border border-gray-700">
             <div className="space-y-8">
-              {/* Hero Paragraph */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Hero Paragraph</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Hero Paragraph
+                </label>
                 <textarea
                   value={content.heroParagraph}
                   onChange={(e) => setContent({...content, heroParagraph: e.target.value})}
@@ -215,12 +211,15 @@ export default function HeroEditor() {
                   className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-gray-100"
                   placeholder="Write your introduction here..."
                 />
-                <p className="mt-1 text-xs text-gray-400">This will be displayed as your main introduction text.</p>
+                <p className="mt-1 text-xs text-gray-400">
+                  This will be displayed as your main introduction text.
+                </p>
               </div>
 
-              {/* Typewriter Texts */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Typewriter Texts</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Typewriter Texts
+                </label>
                 <div className="flex flex-col sm:flex-row gap-2 mb-2">
                   <input
                     type="text"
@@ -270,7 +269,9 @@ export default function HeroEditor() {
           <div className="bg-gray-800 rounded-xl shadow-xl p-6 border border-gray-700">
             <div className="space-y-8">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Resume Link</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Resume Link
+                </label>
                 <div className="border border-gray-700 rounded-lg p-4 bg-gray-750">
                   {content.resume?.url ? (
                     <div className="flex justify-between items-center">
@@ -319,7 +320,6 @@ export default function HeroEditor() {
                 </div>
               </div>
 
-              {/* Save Button */}
               <div className="pt-4">
                 <button
                   onClick={handleSave}

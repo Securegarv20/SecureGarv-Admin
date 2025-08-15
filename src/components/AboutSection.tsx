@@ -3,6 +3,7 @@ import { Save, Sparkles } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 const API_URL = import.meta.env.VITE_API_URL;
+const API_KEY = import.meta.env.VITE_ADMIN_API_KEY;
 
 interface AboutContent {
   whoIAm: string;
@@ -20,24 +21,49 @@ export default function AboutEditor() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+
+  // Enhanced fetch function with API key
+  const fetchWithAuth = async (endpoint: string, options: RequestInit = {}) => {
+    const headers = {
+      'Content-Type': 'application/json',
+      'x-api-key': API_KEY,
+      ...options.headers
+    };
+
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      ...options,
+      headers
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
+  };
 
   useEffect(() => {
     const fetchContent = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/content`);
-        if (!response.ok) throw new Error('Failed to fetch content');
+        setIsLoading(true);
+        toast.loading('Loading about content...', { id: 'loading-toast' });
+        const data = await fetchWithAuth('/api/content');
         
-        const data = await response.json();
         setContent(data.about || {
           whoIAm: '',
           myExpertise: '',
           myMission: '',
           myJourney: ''
         });
-        toast.success('✨ About content loaded!');
+        toast.success('✨ About content loaded successfully!', { id: 'loading-toast' });
       } catch (error) {
         console.error('Error fetching content:', error);
-        toast.error('⚠️ Failed to load content');
+        toast.error(`⚠️ ${error instanceof Error ? error.message : 'Failed to load content'}`, { 
+          id: 'loading-toast',
+          duration: 4000
+        });
       } finally {
         setIsLoading(false);
       }
@@ -46,24 +72,40 @@ export default function AboutEditor() {
     fetchContent();
   }, []);
 
+  const handleChange = (field: keyof AboutContent, value: string) => {
+    setContent(prev => {
+      const newContent = { ...prev, [field]: value };
+      // Check if there are any changes from the initial empty state
+      setHasChanges(Object.values(newContent).some(val => val.trim() !== ''));
+      return newContent;
+    });
+  };
+
   const handleSave = async () => {
+    if (!hasChanges) {
+      toast('No changes to save', { icon: 'ℹ️' });
+      return;
+    }
+
     setIsSaving(true);
     try {
-      const response = await fetch(`${API_URL}/api/content/about`, {
+      toast.loading('Saving about content...', { id: 'save-toast' });
+      await fetchWithAuth('/api/content/about', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(content)
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to save content');
-      }
-
-      toast.success('🚀 About content saved successfully!');
+      setHasChanges(false);
+      toast.success('🚀 About content saved successfully!', { 
+        id: 'save-toast',
+        duration: 3000
+      });
     } catch (error) {
       console.error('Error saving content:', error);
-      toast.error(`❌ ${error.message || 'Failed to save content'}`);
+      toast.error(`❌ ${error instanceof Error ? error.message : 'Failed to save content'}`, { 
+        id: 'save-toast',
+        duration: 4000
+      });
     } finally {
       setIsSaving(false);
     }
@@ -87,10 +129,10 @@ export default function AboutEditor() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-4 sm:p-8 relative overflow-hidden">
       {/* Glow Effects */}
-      <div className="fixed -left-1/4 -top-1/4 w-[150%] h-[150%] bg-radial-gradient(from-purple-500/10 via-transparent to-transparent) opacity-30" />
+      <div className="fixed -left-1/4 -top-1/4 w-[150%] h-[150%] bg-[radial-gradient(circle,var(--tw-gradient-stops))] from-purple-500/10 via-transparent to-transparent opacity-30" />
       
       {/* Grid Pattern */}
-      <div className="fixed inset-0 bg-grid-pattern opacity-10 pointer-events-none" />
+      <div className="fixed inset-0 [background-image:linear-gradient(to_right,rgba(55,65,81,0.3)_1px,transparent_1px),linear-gradient(to_bottom,rgba(55,65,81,0.3)_1px,transparent_1px)] [background-size:20px_20px] opacity-10 pointer-events-none" />
 
       <div className="relative z-10 max-w-6xl mx-auto">
         {/* Header */}
@@ -135,7 +177,7 @@ export default function AboutEditor() {
                 </div>
                 <textarea
                   value={content[section.id as keyof AboutContent]}
-                  onChange={(e) => setContent({...content, [section.id]: e.target.value})}
+                  onChange={(e) => handleChange(section.id as keyof AboutContent, e.target.value)}
                   rows={section.rows}
                   className="w-full p-4 bg-gray-800/50 border border-gray-700/50 rounded-lg focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/30 text-gray-200 placeholder-gray-500 font-mono text-sm transition-all duration-300 group-hover:border-purple-500/30"
                   placeholder={`Describe your ${section.label.toLowerCase()}...`}
@@ -146,9 +188,10 @@ export default function AboutEditor() {
             {/* Save Button */}
             <button
               onClick={handleSave}
-              disabled={isSaving}
+              disabled={isSaving || !hasChanges}
               className={`mt-8 w-full py-3 px-6 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-mono tracking-wider rounded-lg flex items-center justify-center space-x-2 transition-all duration-300 shadow-lg ${
-                isSaving ? 'opacity-80 cursor-not-allowed' : 'hover:shadow-[0_0_15px_5px_rgba(139,92,246,0.3)]'
+                isSaving ? 'opacity-80 cursor-not-allowed' : 
+                !hasChanges ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-[0_0_15px_5px_rgba(139,92,246,0.3)]'
               }`}
             >
               <Save className="w-5 h-5" />
@@ -159,16 +202,7 @@ export default function AboutEditor() {
       </div>
 
       {/* Custom Styles */}
-      <style jsx global>{`
-        .bg-grid-pattern {
-          background-image: 
-            linear-gradient(to right, rgba(55, 65, 81, 0.3) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(55, 65, 81, 0.3) 1px, transparent 1px);
-          background-size: 20px 20px;
-        }
-        .bg-radial-gradient {
-          background: radial-gradient(circle, var(--tw-gradient-stops));
-        }
+      <style>{`
         textarea {
           scrollbar-width: thin;
           scrollbar-color: rgba(139, 92, 246, 0.5) transparent;
