@@ -455,7 +455,7 @@ export default function HeroEditor() {
                   { field: 'whoIAm', label: 'Who I Am', icon: <User size={16} className="text-blue-400" /> },
                   { field: 'myExpertise', label: 'My Expertise', icon: <Brain size={16} className="text-green-400" /> },
                   { field: 'myMission', label: 'My Mission', icon: <Rocket size={16} className="text-purple-400" /> },
-                  { field: 'myJourney', label: 'My Journey', icon: <Briefcase size={16} className="text-yellow-400" /> }
+                  { field: 'myJourney', label: 'From Curiosity to Cybersecurity', icon: <Briefcase size={16} className="text-yellow-400" /> }
                 ].map(({ field, label, icon }) => (
                   <div key={field}>
                     <label className="block text-sm font-medium text-gray-300 mb-2 items-center gap-1">
