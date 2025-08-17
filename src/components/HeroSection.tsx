@@ -226,7 +226,7 @@ export default function HeroEditor() {
     if (!validateField('resumeLink', resumeLink)) return;
 
     try {
-      new URL(resumeLink);
+      new URL(resumeLink); // Validate URL format
     } catch {
       toast.error('Please enter a valid URL');
       return;
@@ -234,18 +234,23 @@ export default function HeroEditor() {
 
     setIsSaving(true);
     try {
-      const data = await apiClient<HeroContent>('/api/content/resume', {
+      const updatedResume = {
+        url: resumeLink,
+        fileName: resumeLink.split('/').pop() || 'Resume'
+      };
+
+      // Send the entire content structure but only update the resume portion
+      const updatedContent = {
+        ...content,
+        resume: updatedResume
+      };
+
+      const data = await apiClient<HeroContent>('/api/content', {
         method: 'PUT',
-        body: JSON.stringify({ 
-          url: resumeLink,
-          fileName: resumeLink.split('/').pop() || 'Resume'
-        })
+        body: JSON.stringify(updatedContent)
       });
 
-      setContent(prev => ({
-        ...prev,
-        resume: data.resume || { url: resumeLink, fileName: 'Resume' }
-      }));
+      setContent(data);
       toast.success('Resume link updated successfully!');
       setShowResumeModal(false);
     } catch (error) {
@@ -259,7 +264,7 @@ export default function HeroEditor() {
 
   const removeResume = async () => {
     try {
-      await apiClient('/api/content/resume', {
+      await apiClient('/api/content', {
         method: 'PUT',
         body: JSON.stringify({ url: '', fileName: '' })
       });
