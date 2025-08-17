@@ -29,14 +29,14 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
       </button>
 
       {/* Sidebar */}
-      <div className={`fixed lg:sticky inset-y-0 left-0 z-40 w-64 bg-slate-800 text-white border-r border-slate-700 transition-all duration-300 ease-in-out transform ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+      <div className={`fixed inset-0 lg:inset-auto lg:sticky lg:top-0 z-40 w-64 h-screen bg-slate-800 text-white border-r border-slate-700 transition-all duration-300 ease-in-out transform ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         <div className="h-full p-6 overflow-y-auto">
-          {/* Logo/Header (optional) */}
-          <div className="mb-6 mt-5 hidden lg:block">
+          {/* Logo/Header - now visible on all screens */}
+          <div className="mb-6 pt-4 lg:pt-0">
             <h1 className="text-xl font-bold">Admin Panel</h1>
           </div>
 
-          <nav className="space-y-2">
+          <nav className="space-y-2 mt-4 lg:mt-0">
             {menuItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -44,7 +44,7 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
                   key={item.id}
                   onClick={() => {
                     onSectionChange(item.id);
-                    setIsOpen(false); // Close sidebar on mobile after selection
+                    setIsOpen(false);
                   }}
                   className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                     activeSection === item.id
