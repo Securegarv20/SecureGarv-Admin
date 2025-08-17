@@ -1,6 +1,5 @@
-import React from 'react';
 import { UserButton, useUser } from '@clerk/clerk-react';
-import { Bell } from 'lucide-react';
+// import { Bell } from 'lucide-react';
 
 export default function Navbar() {
   const { user } = useUser();
@@ -22,9 +21,9 @@ export default function Navbar() {
         </div>
         
         <div className="flex items-center space-x-4">
-          <button className="p-2 text-slate-400 hover:text-lavender-400 hover:bg-slate-800 rounded-lg transition-colors">
+          {/* <button className="p-2 text-slate-400 hover:text-lavender-400 hover:bg-slate-800 rounded-lg transition-colors">
             <Bell size={20} />
-          </button>
+          </button> */}
           <div className="flex items-center space-x-3">
             <UserButton 
               appearance={{

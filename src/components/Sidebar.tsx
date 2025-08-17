@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Home, User, FileText, Briefcase, GraduationCap, Award, MessageSquare, Settings, Menu, X } from 'lucide-react';
+import { useState } from 'react';
+import { User, FileText, Briefcase, GraduationCap, MessageSquare, Settings, Menu, X } from 'lucide-react';
 
 interface SidebarProps {
   activeSection: string;
@@ -10,14 +10,11 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
   const [isOpen, setIsOpen] = useState(false);
   
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'hero', label: 'Hero Section', icon: User },
-    { id: 'about', label: 'About Me', icon: FileText },
-    { id: 'experience', label: 'Experience', icon: Briefcase },
+    { id: 'hero', label: 'Home Content', icon: User },
     { id: 'skills', label: 'Skills', icon: Settings },
     { id: 'education', label: 'Education', icon: GraduationCap },
-    { id: 'certificates', label: 'Certificates', icon: Award },
     { id: 'projects', label: 'Projects', icon: FileText },
+    { id: 'experience', label: 'Experience', icon: Briefcase },
     { id: 'messages', label: 'Messages', icon: MessageSquare },
   ];
 
@@ -35,7 +32,7 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
       <div className={`fixed lg:sticky inset-y-0 left-0 z-40 w-64 bg-slate-800 text-white border-r border-slate-700 transition-all duration-300 ease-in-out transform ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         <div className="h-full p-6 overflow-y-auto">
           {/* Logo/Header (optional) */}
-          <div className="mb-8 hidden lg:block">
+          <div className="mb-6 mt-5 hidden lg:block">
             <h1 className="text-xl font-bold">Admin Panel</h1>
           </div>
 

@@ -1,303 +1,400 @@
-import React, { useState } from 'react';
-import { Save, Plus, Edit2, Trash2, Calendar } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Edit2, Trash2, Calendar, Loader2, ExternalLink, GraduationCap, Award, BookOpen, Trophy } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 interface Education {
-  id: string;
+  _id: string;
+  type: 'education' | 'certification' | 'achievement' | 'publication';
   institution: string;
   degree: string;
-  field: string;
-  startDate: string;
-  endDate: string;
-  gpa: string;
+  period: string;
   description: string;
-  isOngoing: boolean;
+  certificateLink?: string;
 }
 
-export default function EducationSection() {
-  const [educations, setEducations] = useState<Education[]>([
-    {
-      id: '1',
-      institution: 'University of Technology',
-      degree: 'Bachelor of Technology',
-      field: 'Computer Science',
-      startDate: '2020-08',
-      endDate: '2024-05',
-      gpa: '8.5',
-      description: 'Focused on software engineering, data structures, algorithms, and web development.',
-      isOngoing: false
-    }
-  ]);
+const API_URL = import.meta.env.VITE_API_URL;
+const API_KEY = import.meta.env.VITE_ADMIN_API_KEY;
 
+const EducationSection = () => {
+  const [educations, setEducations] = useState<Education[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [editingEducation, setEditingEducation] = useState<Education | null>(null);
-  const [formData, setFormData] = useState({
+  const [editingId, setEditingId] = useState<string | null>(null);
+  
+  const [formData, setFormData] = useState<Omit<Education, '_id'>>({
+    type: 'education',
     institution: '',
     degree: '',
-    field: '',
-    startDate: '',
-    endDate: '',
-    gpa: '',
+    period: '',
     description: '',
-    isOngoing: false
+    certificateLink: ''
   });
 
-  const handleAddEducation = () => {
-    const newEducation: Education = {
-      id: Date.now().toString(),
-      ...formData
+  // Enhanced fetch function with error handling
+  const apiRequest = async (endpoint: string, method: string = 'GET', body?: any) => {
+    const headers = {
+      'Content-Type': 'application/json',
+      'x-api-key': API_KEY
     };
-    setEducations([...educations, newEducation]);
-    resetForm();
-  };
 
-  const handleEditEducation = (education: Education) => {
-    setEditingEducation(education);
-    setFormData({
-      institution: education.institution,
-      degree: education.degree,
-      field: education.field,
-      startDate: education.startDate,
-      endDate: education.endDate,
-      gpa: education.gpa,
-      description: education.description,
-      isOngoing: education.isOngoing
-    });
-    setIsEditing(true);
-  };
+    try {
+      const response = await fetch(`${API_URL}${endpoint}`, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined
+      });
 
-  const handleUpdateEducation = () => {
-    if (editingEducation) {
-      setEducations(educations.map(edu => 
-        edu.id === editingEducation.id ? { ...editingEducation, ...formData } : edu
-      ));
-      resetForm();
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('API Error:', error);
+      toast.error(error instanceof Error ? error.message : 'An error occurred');
+      throw error;
     }
   };
 
-  const handleDeleteEducation = (id: string) => {
-    setEducations(educations.filter(edu => edu.id !== id));
+  // Fetch education data
+  useEffect(() => {
+    const fetchEducation = async () => {
+      try {
+        setIsLoading(true);
+        const data = await apiRequest('/api/education');
+        setEducations(data);
+      } catch (error) {
+        console.error('Fetch error:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchEducation();
+  }, []);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const resetForm = () => {
     setFormData({
+      type: 'education',
       institution: '',
       degree: '',
-      field: '',
-      startDate: '',
-      endDate: '',
-      gpa: '',
+      period: '',
       description: '',
-      isOngoing: false
+      certificateLink: ''
     });
     setIsEditing(false);
-    setEditingEducation(null);
+    setEditingId(null);
   };
 
-  const handleSave = () => {
-    console.log('Saving education:', educations);
-    alert('Education section updated successfully!');
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Basic validation
+    if (!formData.institution || !formData.degree || !formData.period || !formData.description) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      
+      if (isEditing && editingId) {
+        // Update existing education
+        const updatedEducation = await apiRequest(`/api/education/${editingId}`, 'PUT', formData);
+        setEducations(prev => prev.map(edu => 
+          edu._id === editingId ? updatedEducation : edu
+        ));
+        toast.success('Education updated successfully!');
+      } else {
+        // Add new education
+        const newEducation = await apiRequest('/api/education', 'POST', formData);
+        setEducations(prev => [...prev, newEducation]);
+        toast.success('Education added successfully!');
+      }
+      
+      resetForm();
+    } catch (error) {
+      console.error('Save error:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+  const handleEdit = (education: Education) => {
+    setFormData({
+      type: education.type,
+      institution: education.institution,
+      degree: education.degree,
+      period: education.period,
+      description: education.description,
+      certificateLink: education.certificateLink || ''
+    });
+    setIsEditing(true);
+    setEditingId(education._id);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this education entry?')) return;
+
+    try {
+      setIsSaving(true);
+      await apiRequest(`/api/education/${id}`, 'DELETE');
+      setEducations(prev => prev.filter(edu => edu._id !== id));
+      toast.success('Education deleted successfully!');
+    } catch (error) {
+      console.error('Delete error:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'education': return <GraduationCap size={16} />;
+      case 'certification': return <Award size={16} />;
+      case 'achievement': return <Trophy size={16} />;
+      case 'publication': return <BookOpen size={16} />;
+      default: return <GraduationCap size={16} />;
+    }
+  };
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'education': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
+      case 'certification': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      case 'achievement': return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200';
+      case 'publication': return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+    }
   };
 
   return (
-    <div>
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold text-gray-900">Education Management</h2>
-        <p className="text-gray-600 mt-2">Manage your educational background and qualifications</p>
+    <div className="container mx-auto px-4 py-0">
+      <div className="mb-5">
+        <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Education Management</h2>
+        <p className="text-gray-600 dark:text-gray-300 mt-2">
+          Manage your educational background, certifications, achievements, and publications
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            {isEditing ? 'Edit Education' : 'Add New Education'}
+        {/* Form Section */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            {isEditing ? 'Edit Education Entry' : 'Add New Education Entry'}
           </h3>
           
-          <div className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Institution</label>
-              <input
-                type="text"
-                value={formData.institution}
-                onChange={(e) => setFormData(prev => ({ ...prev, institution: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="University/College name"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Degree</label>
-                <input
-                  type="text"
-                  value={formData.degree}
-                  onChange={(e) => setFormData(prev => ({ ...prev, degree: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g., Bachelor's, Master's"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Field of Study</label>
-                <input
-                  type="text"
-                  value={formData.field}
-                  onChange={(e) => setFormData(prev => ({ ...prev, field: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g., Computer Science"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
-                <input
-                  type="month"
-                  value={formData.startDate}
-                  onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
-                <input
-                  type="month"
-                  value={formData.endDate}
-                  onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
-                  disabled={formData.isOngoing}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="isOngoing"
-                checked={formData.isOngoing}
-                onChange={(e) => setFormData(prev => ({ 
-                  ...prev, 
-                  isOngoing: e.target.checked,
-                  endDate: e.target.checked ? '' : prev.endDate
-                }))}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <label htmlFor="isOngoing" className="text-sm text-gray-700">Currently pursuing</label>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">GPA/Grade</label>
-              <input
-                type="text"
-                value={formData.gpa}
-                onChange={(e) => setFormData(prev => ({ ...prev, gpa: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g., 3.8/4.0 or 85%"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="Relevant coursework, achievements, or activities"
-              />
-            </div>
-
-            <div className="flex space-x-3">
-              <button
-                onClick={isEditing ? handleUpdateEducation : handleAddEducation}
-                disabled={!formData.institution || !formData.degree}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 transition-colors"
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Type *
+              </label>
+              <select
+                name="type"
+                value={formData.type}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                required
               >
-                <Plus size={16} />
-                <span>{isEditing ? 'Update Education' : 'Add Education'}</span>
+                <option value="education">Education</option>
+                <option value="certification">Certification</option>
+                <option value="achievement">Achievement</option>
+                <option value="publication">Publication</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Institution/Organization *
+              </label>
+              <input
+                type="text"
+                name="institution"
+                value={formData.institution}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="University/Organization name"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Degree/Certification *
+              </label>
+              <input
+                type="text"
+                name="degree"
+                value={formData.degree}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="e.g., Bachelor's Degree, CEH Certification"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Period *
+              </label>
+              <input
+                type="text"
+                name="period"
+                value={formData.period}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="e.g., 2020 - 2023 or May 2023"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Certificate Link (Optional)
+              </label>
+              <input
+                type="url"
+                name="certificateLink"
+                value={formData.certificateLink || ''}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="https://example.com/certificate"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Description *
+              </label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
+                rows={4}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="Description of your education/certification"
+                required
+              />
+            </div>
+
+            <div className="flex space-x-3 pt-2">
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 dark:disabled:bg-blue-800 transition-colors"
+              >
+                {isSaving ? (
+                  <Loader2 className="animate-spin" size={16} />
+                ) : isEditing ? (
+                  <Edit2 size={16} />
+                ) : (
+                  <Plus size={16} />
+                )}
+                <span>{isEditing ? 'Update' : 'Add'} Entry</span>
               </button>
               
               {isEditing && (
                 <button
+                  type="button"
                   onClick={resetForm}
-                  className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                  disabled={isSaving}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
                   Cancel
                 </button>
               )}
             </div>
-          </div>
+          </form>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
+        {/* List Section */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Education History ({educations.length})</h3>
-            <button
-              onClick={handleSave}
-              className="flex items-center space-x-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-            >
-              <Save size={16} />
-              <span>Save All</span>
-            </button>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Your Education Entries ({educations.length})
+            </h3>
           </div>
 
-          <div className="space-y-4 max-h-96 overflow-y-auto">
-            {educations.map(edu => (
-              <div key={edu.id} className="p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900">{edu.degree} in {edu.field}</h4>
-                    <p className="text-gray-700">{edu.institution}</p>
-                  </div>
-                  <div className="flex items-center space-x-2 ml-4">
-                    <button
-                      onClick={() => handleEditEducation(edu)}
-                      className="text-blue-500 hover:text-blue-700"
-                    >
-                      <Edit2 size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteEducation(edu.id)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-4 mb-2 text-sm text-gray-600">
-                  <div className="flex items-center space-x-1">
-                    <Calendar size={14} />
-                    <span>
-                      {formatDate(edu.startDate)} - {edu.isOngoing ? 'Present' : formatDate(edu.endDate)}
-                    </span>
-                  </div>
-                  {edu.gpa && (
-                    <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
-                      GPA: {edu.gpa}
+          {isLoading ? (
+            <div className="flex justify-center items-center h-64">
+              <Loader2 className="animate-spin text-blue-500" size={32} />
+            </div>
+          ) : educations.length === 0 ? (
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+              <p>No education entries found.</p>
+              <p className="mt-2">Add your first entry using the form on the left.</p>
+            </div>
+          ) : (
+            <div className="space-y-4 max-h-[calc(100vh-300px)] overflow-y-auto pr-2">
+              {educations.map(edu => (
+                <div key={edu._id} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-gray-500 dark:text-gray-400">
+                          {getTypeIcon(edu.type)}
+                        </span>
+                        <h4 className="font-semibold text-gray-900 dark:text-white">{edu.degree}</h4>
+                        <span className={`text-xs px-2 py-1 rounded-full ${getTypeColor(edu.type)}`}>
+                          {edu.type.charAt(0).toUpperCase() + edu.type.slice(1)}
+                        </span>
+                      </div>
+                      <p className="text-gray-700 dark:text-gray-300">{edu.institution}</p>
                     </div>
+                    <div className="flex items-center space-x-2 ml-4">
+                      <button
+                        onClick={() => handleEdit(edu)}
+                        disabled={isSaving}
+                        className="text-blue-500 hover:text-blue-700 dark:hover:text-blue-400 disabled:text-gray-400 dark:disabled:text-gray-500"
+                        aria-label="Edit"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(edu._id)}
+                        disabled={isSaving}
+                        className="text-red-500 hover:text-red-700 dark:hover:text-red-400 disabled:text-gray-400 dark:disabled:text-gray-500"
+                        aria-label="Delete"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="mb-2">
+                    <div className="flex items-center space-x-1 text-sm text-gray-600 dark:text-gray-400">
+                      <Calendar size={14} />
+                      <span>{edu.period}</span>
+                    </div>
+                  </div>
+                  
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">{edu.description}</p>
+                  
+                  {edu.certificateLink && (
+                    <a 
+                      href={edu.certificateLink} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center text-sm text-blue-600 hover:underline dark:text-blue-400"
+                    >
+                      View Certificate <ExternalLink className="ml-1" size={14} />
+                    </a>
                   )}
                 </div>
-                
-                {edu.description && (
-                  <p className="text-sm text-gray-600">{edu.description}</p>
-                )}
-              </div>
-            ))}
-
-            {educations.length === 0 && (
-              <div className="text-center text-gray-500 py-8">
-                No education entries yet. Add your first one!
-              </div>
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default EducationSection;

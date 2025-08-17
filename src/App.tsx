@@ -1,15 +1,12 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import SignInPage from './components/SignInPage';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
-import Dashboard from './components/Dashboard';
 import HeroSection from './components/HeroSection';
-import AboutSection from './components/AboutSection';
 import ExperienceSection from './components/ExperienceSection';
 import SkillsSection from './components/SkillsSection';
 import EducationSection from './components/EducationSection';
-import CertificatesSection from './components/CertificatesSection';
 import ProjectsSection from './components/ProjectsSection';
 import MessagesSection from './components/MessagesSection';
 
@@ -31,26 +28,20 @@ function App() {
 
   const renderSection = () => {
     switch (activeSection) {
-      case 'dashboard':
-        return <Dashboard />;
       case 'hero':
         return <HeroSection />;
-      case 'about':
-        return <AboutSection />;
       case 'experience':
         return <ExperienceSection />;
       case 'skills':
         return <SkillsSection />;
       case 'education':
         return <EducationSection />;
-      case 'certificates':
-        return <CertificatesSection />;
       case 'projects':
         return <ProjectsSection />;
       case 'messages':
         return <MessagesSection />;
       default:
-        return <Dashboard />;
+        return <HeroSection />;
     }
   };
 
