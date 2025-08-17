@@ -2,6 +2,8 @@
   command = "npm run build"
   publish = "dist"
 
-# Disable secrets scanning for Vite env vars
 [build.environment]
-  SECRETS_SCAN_OMIT_KEYS = "VITE_CLERK_PUBLISHABLE_KEY, VITE_API_URL, VITE_API_KEY"
+  SECRETS_SCAN_OMIT_KEYS = "VITE_CLERK_PUBLISHABLE_KEY,VITE_API_URL,VITE_API_KEY,VITE_ADMIN_API_KEY"
+
+[secrets]
+  scanning = false

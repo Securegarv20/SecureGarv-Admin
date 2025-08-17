@@ -334,7 +334,7 @@ export default function HeroEditor() {
               <div className="space-y-6">
                 {/* Hero Paragraph */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-1">
+                  <label className="block text-sm font-medium text-gray-300 mb-2 items-center gap-1">
                     Introduction
                     <span className="text-red-400">*</span>
                   </label>
@@ -453,7 +453,7 @@ export default function HeroEditor() {
                   { field: 'myJourney', label: 'My Journey', icon: <Briefcase size={16} className="text-yellow-400" /> }
                 ].map(({ field, label, icon }) => (
                   <div key={field}>
-                    <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-1">
+                    <label className="block text-sm font-medium text-gray-300 mb-2 items-center gap-1">
                       {icon} {label}
                       <span className="text-red-400">*</span>
                     </label>
@@ -614,7 +614,7 @@ export default function HeroEditor() {
             </div>
 
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-1">
+              <label className="block text-sm font-medium text-gray-300 mb-2 items-center gap-1">
                 <Link size={16} className="text-blue-400" />
                 Resume URL
                 <span className="text-red-400">*</span>
@@ -672,37 +672,6 @@ export default function HeroEditor() {
           </div>
         </div>
       )}
-      
-      {/* Custom Scrollbar Styles */}
-      <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: rgba(31, 41, 55, 0.5);
-          border-radius: 3px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(156, 163, 175, 0.5);
-          border-radius: 3px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(156, 163, 175, 0.7);
-        }
-        .animate-pop-in {
-          animation: popIn 0.2s ease-out forwards;
-        }
-        @keyframes popIn {
-          0% {
-            opacity: 0;
-            transform: scale(0.95);
-          }
-          100% {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-      `}</style>
     </div>
   );
 }
