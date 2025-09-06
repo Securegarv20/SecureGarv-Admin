@@ -35,6 +35,7 @@ const ProjectsSection = () => {
 
   const [newTechnology, setNewTechnology] = useState('');
 
+  // Fixed category values to match backend validation
   const categories = ['Web Development', 'CyberSecurity', 'Automation', 'Python', 'Scripting', 'Other'];
 
   // API request helper
@@ -123,12 +124,19 @@ const ProjectsSection = () => {
   const addTechnology = () => {
     const technology = newTechnology.trim();
     if (technology && !formData.technologies.includes(technology)) {
+      if (formData.technologies.length >= 10) {
+        toast.error('Maximum 10 technologies allowed');
+        return;
+      }
+      
       setFormData(prev => ({
         ...prev,
         technologies: [...prev.technologies, technology]
       }));
       setNewTechnology('');
       toast.success('Technology added');
+    } else if (formData.technologies.includes(technology)) {
+      toast.error('Technology already added');
     }
   };
 
@@ -145,6 +153,12 @@ const ProjectsSection = () => {
     
     if (!formData.title || !formData.description || !formData.image) {
       toast.error('Please fill in all required fields');
+      return;
+    }
+
+    // Validate category
+    if (!categories.includes(formData.category)) {
+      toast.error(`Invalid category. Please select from: ${categories.join(', ')}`);
       return;
     }
 
@@ -176,7 +190,16 @@ const ProjectsSection = () => {
       resetForm();
     } catch (error) {
       console.error('Save error:', error);
-      toast.error('Failed to save project. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save project';
+      
+      // Handle specific validation errors
+      if (errorMessage.includes('category')) {
+        toast.error('Invalid category selected. Please choose a valid option.');
+      } else if (errorMessage.includes('validation failed')) {
+        toast.error('Project validation failed. Please check all fields.');
+      } else {
+        toast.error(errorMessage);
+      }
     } finally {
       setIsSaving(false);
     }
@@ -207,7 +230,8 @@ const ProjectsSection = () => {
       toast.success('Project deleted successfully!');
     } catch (error) {
       console.error('Delete error:', error);
-      toast.error('Failed to delete project. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete project';
+      toast.error(errorMessage);
     } finally {
       setIsSaving(false);
     }
@@ -322,7 +346,7 @@ const ProjectsSection = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Technologies
+                Technologies (Max: 10)
               </label>
               <div className="flex gap-2 mb-2">
                 <input
@@ -355,6 +379,9 @@ const ProjectsSection = () => {
                   </div>
                 ))}
               </div>
+              {formData.technologies.length >= 10 && (
+                <p className="text-sm text-red-500 mt-1">Maximum 10 technologies reached</p>
+              )}
             </div>
 
             <div className="flex space-x-3 pt-2">
