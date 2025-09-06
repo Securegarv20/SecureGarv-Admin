@@ -35,7 +35,7 @@ const ProjectsSection = () => {
 
   const [newTechnology, setNewTechnology] = useState('');
 
-  const categories = ['Web Development', 'CyberSecurity', 'Automation', 'Other'];
+  const categories = ['Web Development', 'CyberSecurity', 'Automation', 'Python', 'Scripting', 'Other'];
 
   // API request helper
   const apiRequest = async (endpoint: string, method: string = 'GET', body?: any) => {
