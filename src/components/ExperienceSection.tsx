@@ -241,7 +241,7 @@ const ExperienceSection = () => {
 
     try {
       setIsSaving(true);
-      await apiRequest(`/experience/${id}`, 'DELETE');
+      await apiRequest(`/api/experience/${id}`, 'DELETE');
       setExperiences(prev => prev.filter(exp => exp._id !== id));
       toast.success('Experience deleted successfully!');
     } catch (error) {
