@@ -9,6 +9,7 @@ import SkillsSection from './components/SkillsSection';
 import EducationSection from './components/EducationSection';
 import ProjectsSection from './components/ProjectsSection';
 import MessagesSection from './components/MessagesSection';
+import BlogSection from './components/BlogSection';
 
 function App() {
   const { isLoaded, isSignedIn } = useAuth();
@@ -40,6 +41,8 @@ function App() {
         return <ProjectsSection />;
       case 'messages':
         return <MessagesSection />;
+      case 'blog':
+        return <BlogSection />;
       default:
         return <HeroSection />;
     }

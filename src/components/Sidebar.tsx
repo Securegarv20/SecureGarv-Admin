@@ -15,6 +15,7 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
     { id: 'education', label: 'Education', icon: GraduationCap },
     { id: 'projects', label: 'Projects', icon: FileText },
     { id: 'experience', label: 'Experience', icon: Briefcase },
+    { id: 'blog', label: 'Blog Posts', icon: FileText },
     { id: 'messages', label: 'Messages', icon: MessageSquare },
   ];
 

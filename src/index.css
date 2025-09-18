@@ -83,3 +83,122 @@ z-index: 1000;
             transform: scale(1);
           }
         }
+
+        /* Custom styles for Quill editor to match dark theme */
+.ql-toolbar.ql-snow {
+  border: 1px solid #4B5563 !important;
+  border-bottom: none !important;
+  background: #374151 !important;
+}
+
+.ql-container.ql-snow {
+  border: 1px solid #4B5563 !important;
+  background: #1F2937 !important;
+  color: #F3F4F6 !important;
+  font-family: inherit !important;
+}
+
+.ql-editor {
+  color: #F3F4F6 !important;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+  min-height: 300px !important;
+}
+
+.ql-editor.ql-blank::before {
+  color: #9CA3AF !important;
+  font-style: normal !important;
+}
+
+.ql-snow .ql-stroke {
+  stroke: #D1D5DB !important;
+}
+
+.ql-snow .ql-fill {
+  fill: #D1D5DB !important;
+}
+
+.ql-snow .ql-picker {
+  color: #D1D5DB !important;
+}
+
+.ql-snow .ql-picker-options {
+  background: #374151 !important;
+  border: 1px solid #4B5563 !important;
+}
+
+.ql-snow .ql-picker-label {
+  border: 1px solid transparent !important;
+}
+
+.ql-snow .ql-picker-item {
+  color: #D1D5DB !important;
+}
+
+.ql-snow .ql-picker-item:hover {
+  color: #FFFFFF !important;
+  background: #4B5563 !important;
+}
+
+/* Code block styling */
+.ql-snow .ql-editor pre.ql-syntax {
+  background: #111827 !important;
+  color: #10B981 !important;
+  border: 1px solid #374151 !important;
+  border-radius: 0.375rem;
+  padding: 1rem !important;
+  overflow-x: auto;
+}
+
+/* Blockquote styling */
+.ql-snow .ql-editor blockquote {
+  border-left: 4px solid #8B5CF6 !important;
+  background: rgba(139, 92, 246, 0.1) !important;
+  padding: 1rem 1.5rem !important;
+  margin: 1rem 0 !important;
+  color: #E5E7EB !important;
+  font-style: italic !important;
+}
+
+/* List styling */
+.ql-snow .ql-editor ul, 
+.ql-snow .ql-editor ol {
+  padding-left: 1.5rem !important;
+  margin: 1rem 0 !important;
+}
+
+.ql-snow .ql-editor li {
+  margin: 0.5rem 0 !important;
+}
+
+/* Heading styling */
+.ql-snow .ql-editor h1 {
+  font-size: 2rem !important;
+  font-weight: 700 !important;
+  color: #F9FAFB !important;
+  margin: 1.5rem 0 1rem 0 !important;
+}
+
+.ql-snow .ql-editor h2 {
+  font-size: 1.5rem !important;
+  font-weight: 600 !important;
+  color: #F9FAFB !important;
+  margin: 1.25rem 0 0.75rem 0 !important;
+}
+
+.ql-snow .ql-editor h3 {
+  font-size: 1.25rem !important;
+  font-weight: 600 !important;
+  color: #F9FAFB !important;
+  margin: 1rem 0 0.5rem 0 !important;
+}
+
+/* Link styling */
+.ql-snow .ql-editor a {
+  color: #8B5CF6 !important;
+  text-decoration: underline !important;
+}
+
+.ql-snow .ql-editor a:hover {
+  color: #A78BFA !important;
+}
