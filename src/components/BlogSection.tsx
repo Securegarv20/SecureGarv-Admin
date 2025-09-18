@@ -112,13 +112,13 @@ export default function BlogSection() {
     'link', 'image', 'video', 'code-block'
   ];
 
-  // API client with error handling
+  // Fixed API client with proper headers - JUST LIKE YOUR SKILLS SECTION
   const apiClient = async <T,>(endpoint: string, options: RequestInit = {}): Promise<T> => {
-    const headers = {
+    const headers = new Headers({
       'Content-Type': 'application/json',
-      'x-api-key': API_KEY,
-      ...options.headers
-    };
+      'x-api-key': API_KEY || '',
+      ...(options.headers as Record<string, string>)
+    });
 
     try {
       const response = await fetch(`${API_URL}${endpoint}`, { 
