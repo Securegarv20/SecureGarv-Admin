@@ -31,6 +31,15 @@ interface BlogApiResponse {
 const API_URL = import.meta.env.VITE_API_URL;
 const API_KEY = import.meta.env.VITE_ADMIN_API_KEY;
 
+// Helper functions for counters
+const getWordCount = (text: string) => {
+  return text.trim() ? text.trim().split(/\s+/).length : 0;
+};
+
+const getCharacterCount = (text: string) => {
+  return text.length;
+};
+
 // Custom toolbar component
 const CustomToolbar = () => (
   <div id="toolbar" className="border-b border-gray-600/50 p-2 bg-gray-700/50">
@@ -91,6 +100,12 @@ export default function BlogSection() {
     newTag: ''
   });
 
+  // Counter states
+  const [titleCharCount, setTitleCharCount] = useState(0);
+  const [excerptCharCount, setExcerptCharCount] = useState(0);
+  const [excerptWordCount, setExcerptWordCount] = useState(0);
+  const [tagCount, setTagCount] = useState(0);
+
   // Quill editor modules configuration
   const modules = {
     toolbar: {
@@ -112,7 +127,7 @@ export default function BlogSection() {
     'link', 'image', 'video', 'code-block'
   ];
 
-  // Fixed API client with proper headers - JUST LIKE YOUR SKILLS SECTION
+  // Fixed API client with proper headers
   const apiClient = async <T,>(endpoint: string, options: RequestInit = {}): Promise<T> => {
     const headers = new Headers({
       'Content-Type': 'application/json',
@@ -181,6 +196,20 @@ export default function BlogSection() {
       [field]: field === 'status' ? (value as 'draft' | 'published') : value 
     }));
     
+    // Update counters
+    if (field === 'title') {
+      setTitleCharCount(getCharacterCount(value as string));
+    }
+    
+    if (field === 'excerpt') {
+      setExcerptCharCount(getCharacterCount(value as string));
+      setExcerptWordCount(getWordCount(value as string));
+    }
+    
+    if (field === 'tags') {
+      setTagCount((value as string[]).length);
+    }
+    
     if (field !== 'status' && field !== 'tags') {
       validateField(field, value as string);
     }
@@ -198,6 +227,7 @@ export default function BlogSection() {
         tags: [...prev.tags, prev.newTag.trim()],
         newTag: ''
       }));
+      setTagCount(prev => prev + 1);
     }
   };
 
@@ -206,6 +236,7 @@ export default function BlogSection() {
       ...prev,
       tags: prev.tags.filter(tag => tag !== tagToRemove)
     }));
+    setTagCount(prev => prev - 1);
   };
 
   const openEditor = (post?: BlogPost) => {
@@ -222,6 +253,10 @@ export default function BlogSection() {
         status: post.status,
         newTag: ''
       });
+      setTitleCharCount(getCharacterCount(post.title));
+      setExcerptCharCount(getCharacterCount(post.excerpt));
+      setExcerptWordCount(getWordCount(post.excerpt));
+      setTagCount(post.tags.length);
     } else {
       setEditingPost(null);
       setFormData({
@@ -235,6 +270,10 @@ export default function BlogSection() {
         status: 'draft',
         newTag: ''
       });
+      setTitleCharCount(0);
+      setExcerptCharCount(0);
+      setExcerptWordCount(0);
+      setTagCount(0);
     }
     setShowEditor(true);
     setValidationErrors({});
@@ -506,10 +545,10 @@ export default function BlogSection() {
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              {/* Title */}
+              {/* Title Field with Counter */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Title *
+                  Title * (max 200 characters)
                 </label>
                 <input
                   type="text"
@@ -520,16 +559,22 @@ export default function BlogSection() {
                     validationErrors.title ? 'border-red-500/80' : 'border-gray-600/50'
                   } rounded-lg focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition text-white placeholder-gray-400`}
                   placeholder="Enter blog post title"
+                  maxLength={200}
                 />
-                {validationErrors.title && (
-                  <p className="mt-1 text-xs text-red-400">{validationErrors.title}</p>
-                )}
+                <div className="flex justify-between mt-1">
+                  <div className="text-xs text-gray-400">
+                    {titleCharCount}/200 characters
+                  </div>
+                  {validationErrors.title && (
+                    <p className="text-xs text-red-400">{validationErrors.title}</p>
+                  )}
+                </div>
               </div>
 
-              {/* Excerpt */}
+              {/* Excerpt Field with Counters */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Excerpt *
+                  Excerpt * (max 300 characters)
                 </label>
                 <textarea
                   value={formData.excerpt}
@@ -540,10 +585,16 @@ export default function BlogSection() {
                     validationErrors.excerpt ? 'border-red-500/80' : 'border-gray-600/50'
                   } rounded-lg focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition text-white placeholder-gray-400`}
                   placeholder="Brief description of your blog post"
+                  maxLength={300}
                 />
-                {validationErrors.excerpt && (
-                  <p className="mt-1 text-xs text-red-400">{validationErrors.excerpt}</p>
-                )}
+                <div className="flex justify-between mt-1">
+                  <div className="text-xs text-gray-400">
+                    {excerptCharCount}/300 characters • {excerptWordCount} words
+                  </div>
+                  {validationErrors.excerpt && (
+                    <p className="text-xs text-red-400">{validationErrors.excerpt}</p>
+                  )}
+                </div>
               </div>
 
               {/* Image URL */}
@@ -622,10 +673,10 @@ export default function BlogSection() {
                 </div>
               </div>
 
-              {/* Tags */}
+              {/* Tags Field with Counter */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Tags
+                  Tags ({tagCount}/10 max)
                 </label>
                 <div className="flex gap-2 mb-2">
                   <input
@@ -635,14 +686,19 @@ export default function BlogSection() {
                     onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
                     className="flex-1 p-3 bg-gray-700/70 border border-gray-600/50 rounded-lg focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition text-white placeholder-gray-400"
                     placeholder="Add a tag and press Enter"
+                    disabled={tagCount >= 10}
                   />
                   <button
                     onClick={addTag}
-                    className="px-4 py-2 bg-purple-600/50 hover:bg-purple-600/70 text-purple-300 rounded-lg transition border border-purple-600/50"
+                    disabled={tagCount >= 10 || !formData.newTag.trim()}
+                    className="px-4 py-2 bg-purple-600/50 hover:bg-purple-600/70 text-purple-300 rounded-lg transition border border-purple-600/50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Add
                   </button>
                 </div>
+                {tagCount >= 10 && (
+                  <p className="text-xs text-red-400 mb-2">Maximum 10 tags reached</p>
+                )}
                 <div className="flex flex-wrap gap-2">
                   {formData.tags.map((tag) => (
                     <span
