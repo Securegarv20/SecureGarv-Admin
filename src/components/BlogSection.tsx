@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { Save, Plus, Edit, Trash2, Eye, Calendar, Clock, X, Loader2, BookOpen, Bold, Italic, Underline, List, Code, Link, Image } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Save, Plus, Edit, Trash2, Eye, Calendar, Clock, X, Loader2, BookOpen, Bold, Italic, Underline, List, Code, Link, Image, RefreshCw } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -39,6 +39,66 @@ const getWordCount = (text: string) => {
 const getCharacterCount = (text: string) => {
   return text.length;
 };
+
+// AUTOMATIC READ TIME CALCULATION
+const calculateReadTime = (content: string): string => {
+  if (!content.trim()) return '0 min read';
+  
+  // Strip HTML tags but preserve structure information
+  const text = content
+    .replace(/<img[^>]*>/gi, ' [image] ') // Count images as additional time
+    .replace(/<h[1-6][^>]*>/gi, ' [heading] ') // Count headings as structural breaks
+    .replace(/<code[^>]*>|<\/code>/gi, ' [code] ') // Mark code blocks
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  
+  if (!text) return '0 min read';
+  
+  const wordCount = text.split(/\s+/).length;
+  
+  // Count elements
+  const imageCount = (content.match(/<img[^>]*>/gi) || []).length;
+  const headingCount = (content.match(/<h[1-6][^>]*>/gi) || []).length;
+  const codeBlockCount = (content.match(/<code[^>]*>/gi) || []).length;
+  
+  // Medium-style calculation (more conservative)
+  const wordsPerMinute = 160; // Slower than average
+  const baseMinutes = wordCount / wordsPerMinute;
+  
+  // Element time bonuses (Medium approach)
+  const elementTime = 
+    (imageCount * 0.4) +      // 24 seconds per image
+    (headingCount * 0.15) +   // 9 seconds per heading
+    (codeBlockCount * 0.8);   // 48 seconds per code block
+  
+  const totalMinutes = baseMinutes + elementTime;
+  const minutes = Math.max(1, Math.ceil(totalMinutes));
+  
+  // For very long articles, show in hours for anything over 60 minutes
+  if (minutes >= 60) {
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    return remainingMinutes > 0 
+      ? `${hours}h ${remainingMinutes}m read` 
+      : `${hours}h read`;
+  }
+  
+  return `${minutes} min read`;
+};
+
+// Debounce utility function (browser compatible)
+function debounce(func: Function, wait: number) {
+  let timeout: number;
+  return function executedFunction(...args: any[]) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
 
 // Custom toolbar component
 const CustomToolbar = () => (
@@ -93,7 +153,7 @@ export default function BlogSection() {
     excerpt: '',
     content: '',
     date: new Date().toISOString().split('T')[0],
-    readTime: '5 min read',
+    readTime: '1 min read', // Default will be calculated automatically
     image: '',
     tags: [] as string[],
     status: 'draft' as 'draft' | 'published',
@@ -126,6 +186,22 @@ export default function BlogSection() {
     'list', 'bullet', 'indent',
     'link', 'image', 'video', 'code-block'
   ];
+
+  // DEBOUNCED READ TIME CALCULATION
+  const calculateReadTimeDebounced = useCallback(
+    debounce((content: string) => {
+      const readTime = calculateReadTime(content);
+      setFormData(prev => ({ ...prev, readTime }));
+    }, 500),
+    []
+  );
+
+  // Manual refresh for read time
+  const refreshReadTime = () => {
+    const newReadTime = calculateReadTime(formData.content);
+    setFormData(prev => ({ ...prev, readTime: newReadTime }));
+    toast.success(`Read time updated: ${newReadTime}`);
+  };
 
   // Fixed API client with proper headers
   const apiClient = async <T,>(endpoint: string, options: RequestInit = {}): Promise<T> => {
@@ -215,9 +291,13 @@ export default function BlogSection() {
     }
   };
 
+  // UPDATED CONTENT CHANGE HANDLER WITH AUTO READ TIME
   const handleContentChange = (content: string) => {
     setFormData(prev => ({ ...prev, content }));
     validateField('content', content);
+    
+    // Automatically calculate and update read time
+    calculateReadTimeDebounced(content);
   };
 
   const addTag = () => {
@@ -264,7 +344,7 @@ export default function BlogSection() {
         excerpt: '',
         content: '',
         date: new Date().toISOString().split('T')[0],
-        readTime: '5 min read',
+        readTime: '1 min read', // Updated default
         image: '',
         tags: [],
         status: 'draft',
@@ -659,17 +739,32 @@ export default function BlogSection() {
                   />
                 </div>
 
+                {/* UPDATED READ TIME FIELD WITH REFRESH BUTTON */}
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Read Time
+                    Read Time (auto-calculated)
                   </label>
-                  <input
-                    type="text"
-                    value={formData.readTime}
-                    onChange={(e) => handleInputChange('readTime', e.target.value)}
-                    className="w-full p-3 bg-gray-700/70 border border-gray-600/50 rounded-lg focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition text-white placeholder-gray-400"
-                    placeholder="5 min read"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={formData.readTime}
+                      onChange={(e) => handleInputChange('readTime', e.target.value)}
+                      className="flex-1 p-3 bg-gray-700/70 border border-gray-600/50 rounded-lg focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition text-white placeholder-gray-400"
+                      placeholder="1 min read"
+                    />
+                    <button
+                      type="button"
+                      onClick={refreshReadTime}
+                      className="px-4 py-3 bg-blue-600/50 hover:bg-blue-600/70 text-blue-300 rounded-lg transition border border-blue-600/50 flex items-center gap-2"
+                      title="Recalculate based on current content"
+                    >
+                      <RefreshCw size={16} />
+                      Refresh
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Automatically calculated from content. You can also manually adjust if needed.
+                  </p>
                 </div>
               </div>
 
