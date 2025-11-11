@@ -16,6 +16,7 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
     { id: 'projects', label: 'Projects', icon: FileText },
     { id: 'experience', label: 'Experience', icon: Briefcase },
     { id: 'blog', label: 'Blog Posts', icon: FileText },
+    { id: 'reviews', label: 'Reviews', icon: Settings },
     { id: 'messages', label: 'Messages', icon: MessageSquare },
   ];
 

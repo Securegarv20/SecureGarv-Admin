@@ -10,6 +10,7 @@ import EducationSection from './components/EducationSection';
 import ProjectsSection from './components/ProjectsSection';
 import MessagesSection from './components/MessagesSection';
 import BlogSection from './components/BlogSection';
+import ReviewSection from './components/ReviewSection'; // Add this import
 
 function App() {
   const { isLoaded, isSignedIn } = useAuth();
@@ -43,6 +44,8 @@ function App() {
         return <MessagesSection />;
       case 'blog':
         return <BlogSection />;
+      case 'reviews': // Add this case
+        return <ReviewSection />;
       default:
         return <HeroSection />;
     }
@@ -52,10 +55,10 @@ function App() {
     <div className="flex flex-col bg-slate-900 min-h-screen">
       <Navbar />
       <div className="flex flex-1">
-      <Sidebar activeSection={activeSection} onSectionChange={setActiveSection} />
+        <Sidebar activeSection={activeSection} onSectionChange={setActiveSection} />
         <main className="flex-1 p-8 overflow-y-auto bg-slate-900">
-        {renderSection()}
-      </main>
+          {renderSection()}
+        </main>
       </div>
     </div>
   );
