@@ -1,6 +1,6 @@
 // components/ReviewSection.tsx
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Star, Calendar, Loader2, ExternalLink, MessageCircle } from 'lucide-react';
+import { Plus, Edit2, Trash2, Star, Calendar, Loader2, MessageCircle, ExternalLink } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 interface Review {
@@ -15,6 +15,7 @@ interface Review {
   featured: boolean;
   order: number;
   createdAt: string;
+  websiteUrl?: string;
 }
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -370,6 +371,20 @@ const ReviewSection = () => {
               />
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Website URL (Optional)
+              </label>
+              <input
+                type="url"
+                name="websiteUrl"
+                value={formData.websiteUrl || ''}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="https://example.com"
+              />
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -552,6 +567,17 @@ const ReviewSection = () => {
                   <p className="text-sm text-gray-600 dark:text-gray-300 mb-3 line-clamp-3">
                     "{review.text}"
                   </p>
+
+                  {review.websiteUrl && (
+                    <a 
+                      href={review.websiteUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center text-xs text-blue-600 hover:underline dark:text-blue-400 mt-1"
+                    >
+                      View Website <ExternalLink className="ml-1" size={12} />
+                    </a>
+                  )}
                   
                   <div className="flex items-center space-x-1 text-xs text-gray-500 dark:text-gray-400">
                     <Calendar size={12} />
