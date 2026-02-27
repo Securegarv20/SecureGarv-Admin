@@ -399,7 +399,8 @@ export default function BlogSection() {
       }
       
       // Refresh posts list
-      const response = await apiClient<BlogApiResponse>('/api/blog?status=all');
+      const response = await apiClient<BlogApiResponse>('/api/blog?status=draft');
+
       setPosts(response.posts);
       closeEditor();
     } catch (error) {
